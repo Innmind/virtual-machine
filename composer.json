@@ -19,12 +19,12 @@
     },
     "autoload": {
         "psr-4": {
-            "innmind\\virtual-machine\\": "src/"
+            "Innmind\\VirtualMachine\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Tests\\innmind\\virtual-machine\\": "tests/"
+            "Tests\\Innmind\\VirtualMachine\\": "tests/"
         }
     },
     "require-dev": {
