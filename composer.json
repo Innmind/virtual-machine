@@ -15,7 +15,8 @@
         "issues": "http://github.com/innmind/virtual-machine/issues"
     },
     "require": {
-        "php": "~8.0"
+        "php": "~8.0",
+        "innmind/cli": "^2.2"
     },
     "autoload": {
         "psr-4": {
