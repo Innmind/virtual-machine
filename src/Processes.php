@@ -13,6 +13,7 @@ use Innmind\Server\Status\Server as Status;
 use Innmind\Immutable\{
     Set,
     Str,
+    RegExp,
 };
 
 final class Processes
@@ -63,6 +64,9 @@ final class Processes
             ->status()
             ->processes()
             ->all()
+            ->filter(function(int $_, Status\Process $process): bool {
+                return $process->command()->matches(RegExp::of("~{$this->bin()}~"));
+            })
             ->filter(function(int $pid) use ($cwd): bool {
                 $process = $this
                     ->os

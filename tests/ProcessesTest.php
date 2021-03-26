@@ -190,6 +190,17 @@ class ProcessesTest extends TestCase
                         ),
                     )
                     (
+                        42,
+                        new Status\Process(
+                            new Status\Process\Pid(42),
+                            new Status\Process\User('self'),
+                            new Status\Cpu\Percentage(1),
+                            new Status\Process\Memory(1),
+                            $this->createMock(PointInTime::class),
+                            new Status\Process\Command('-bash'),
+                        ),
+                    )
+                    (
                         5,
                         new Status\Process(
                             new Status\Process\Pid(5),
@@ -204,6 +215,12 @@ class ProcessesTest extends TestCase
                 $env
                     ->method('workingDirectory')
                     ->willReturn($workingDirectory);
+                $env
+                    ->method('variables')
+                    ->willReturn(Map::of('string', 'string')('_', 'bin/console'));
+                $env
+                    ->method('arguments')
+                    ->willReturn(Sequence::strings('bin/console'));
                 $os = $this->createMock(OperatingSystem::class);
                 $os
                     ->method('control')
