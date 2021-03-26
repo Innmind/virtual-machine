@@ -1,0 +1,28 @@
+#!/usr/bin/env php
+<?php
+declare(strict_types = 1);
+
+require __DIR__.'/../vendor/autoload.php';
+
+use Innmind\VirtualMachine\VirtualMachine;
+use Innmind\CLI\{
+    Main,
+    Environment,
+    Commands,
+};
+use Innmind\OperatingSystem\OperatingSystem;
+use Innmind\Url\Path;
+
+new class extends Main
+{
+    protected function main(Environment $env, OperatingSystem $os): void
+    {
+        $vm = VirtualMachine::of($env, $os);
+
+        $run = new Commands(
+            $vm->filesystem()->require(Path::of('command1.php'))($vm),
+            $vm->filesystem()->require(Path::of('command2.php')),
+        );
+        $run($env);
+    }
+};
