@@ -53,11 +53,21 @@ final class Processes
      */
     public function all(): Set
     {
-        // removing the right slash as the lsof command doesn't display the
-        // directory this way
-        $cwd = Str::of($this->env->workingDirectory()->toString())
-            ->rightTrim('/')
-            ->toString();
+        // this will list all PIDs that have a relation with the working directory
+        // usually this will represent all processes having this directory as
+        // their working directory
+        $lsof = $this->os->control()->processes()->execute(
+            Concrete::foreground('lsof')
+                ->withArgument('+D')
+                ->withArgument($this->env->workingDirectory()->toString())
+                ->withShortOption('t'),
+        );
+        $lsof->wait();
+        $pids = Str::of($lsof->output()->toString())
+            ->split("\n")
+            ->map(static fn($line) => $line->trim())
+            ->filter(static fn($line) => !$line->empty())
+            ->mapTo('int', static fn($line) => (int) $line->toString());
 
         return $this
             ->os
@@ -67,19 +77,8 @@ final class Processes
             ->filter(function(int $_, Status\Process $process): bool {
                 return $process->command()->matches(RegExp::of("~{$this->bin()}~"));
             })
-            ->filter(function(int $pid) use ($cwd): bool {
-                $process = $this
-                    ->os
-                    ->control()
-                    ->processes()
-                    ->execute(
-                        Concrete::foreground('lsof')
-                            ->withShortOption('p', (string) $pid)
-                            ->pipe(Concrete::foreground('grep')->withArgument('cwd')),
-                    );
-                $process->wait();
-
-                return Str::of($process->output()->toString())->contains($cwd);
+            ->filter(static function(int $pid) use ($pids): bool {
+                return $pids->contains($pid);
             })
             ->values()
             ->toSetOf(Status\Process::class);

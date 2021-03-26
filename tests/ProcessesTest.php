@@ -12,6 +12,7 @@ use Innmind\CLI\Environment;
 use Innmind\Server\Control\Server;
 use Innmind\Server\Status\Server as Status;
 use Innmind\TimeContinuum\PointInTime;
+use Innmind\Url\Path;
 use Innmind\Immutable\{
     Map,
     Sequence,
@@ -22,7 +23,6 @@ use Innmind\BlackBox\{
     PHPUnit\BlackBox,
     Set,
 };
-use Fixtures\Innmind\Url\Path;
 
 class ProcessesTest extends TestCase
 {
@@ -161,11 +161,11 @@ class ProcessesTest extends TestCase
     public function testListProcesses()
     {
         $this
-            ->forAll(
-                Path::any(),
-                Set\Strings::any(),
-            )
-            ->then(function($workingDirectory, $random) {
+            ->forAll(Set\Elements::of(
+                Path::of('/somewhere'),
+                Path::of('/somewhere/else/'),
+            ))
+            ->then(function($workingDirectory) {
                 $processesList = Map::of('int', Status\Process::class)
                     (
                         3,
@@ -229,42 +229,18 @@ class ProcessesTest extends TestCase
                     ->method('processes')
                     ->willReturn($controlProcesses = $this->createMock(Server\Processes::class));
                 $controlProcesses
-                    ->expects($this->exactly(3))
+                    ->expects($this->once())
                     ->method('execute')
-                    ->withConsecutive(
-                        [$this->callback(static function($command) {
-                            return $command->toString() === "lsof '-p' '3' | 'grep' 'cwd'";
-                        })],
-                        [$this->callback(static function($command) {
-                            return $command->toString() === "lsof '-p' '4' | 'grep' 'cwd'";
-                        })],
-                        [$this->callback(static function($command) {
-                            return $command->toString() === "lsof '-p' '5' | 'grep' 'cwd'";
-                        })],
-                    )
-                    ->will($this->onConsecutiveCalls(
-                        $process1 = $this->createMock(Server\Process::class),
-                        $process2 = $this->createMock(Server\Process::class),
-                        $process3 = $this->createMock(Server\Process::class),
-                    ));
-                $process1
+                    ->with($this->callback(static function($command) use ($workingDirectory) {
+                        return $command->toString() === "lsof '+D' '{$workingDirectory->toString()}' '-t'";
+                    }))
+                    ->willReturn($process = $this->createMock(Server\Process::class));
+                $process
                     ->method('output')
-                    ->willReturn($output1 = $this->createMock(Server\Process\Output::class));
-                $output1
+                    ->willReturn($output = $this->createMock(Server\Process\Output::class));
+                $output
                     ->method('toString')
-                    ->willReturn($random);
-                $process2
-                    ->method('output')
-                    ->willReturn($output2 = $this->createMock(Server\Process\Output::class));
-                $output2
-                    ->method('toString')
-                    ->willReturn($random.$workingDirectory->toString().$random);
-                $process3
-                    ->method('output')
-                    ->willReturn($output3 = $this->createMock(Server\Process\Output::class));
-                $output3
-                    ->method('toString')
-                    ->willReturn($random);
+                    ->willReturn(" 4\n1337\n");
                 $os
                     ->method('status')
                     ->willReturn($status = $this->createMock(Status::class));
